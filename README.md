@@ -27,8 +27,8 @@
 
 ```bash
 # 1. 依赖: python3 + rknn-toolkit-lite2 (Rockchip 官方 wheel)
-#    pip3 install rknn_toolkit_lite2-*.whl  (板端)
-#    pip3 install opencv-python-headless numpy flask
+#    pip3 install rknn_toolkit_lite2-*.whl  (板端, 见 requirements.txt 注释)
+#    pip3 install -r requirements.txt
 
 # 2. 生成 RKNN 模型 (在 x86 Linux 上转换一次即可; 见下"模型转换")
 python3 models/convert_rknn.py            # 产出 models/yolov8n-pose-int8.rknn
@@ -45,6 +45,28 @@ python3 web.py                            # http://<板子IP>:8100
 ```
 
 无显示器的纯命令行模式：`python3 main.py`（HUD 走 ffplay 管道，可加 `--no-display`）。
+
+### 运行时配置文件
+
+仓库只提交模板，真实文件由程序/校准流程生成并被 `.gitignore` 排除（含个人基准数据）：
+
+| 文件 | 来源 | 说明 |
+|------|------|------|
+| `config/calibration.json` | 网页校准 或 `calibration/calibrate.py` | 个人基准；缺失时判"未校准"，保守不报警 |
+| `config/sound.json` | `POST /api/sound` | `{"enabled": bool}`，仅持久化开关 |
+| `config/alert.example.json` | 仓库模板 | 旧版 `ui/sound.py` 的参数留档，**当前代码不读取** |
+
+### 开机自启 (systemd)
+
+```bash
+sudo cp deploy/posture-web.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now posture-web
+systemctl status posture-web
+```
+
+单元里写了 `WorkingDirectory=/root/posture_monitor`，换路径要一并改；`User=root` 是因为要访问 `/dev/video*` 与 ALSA 设备，如需降权请自行加 `video`/`audio` 组。
+
 
 ## 架构
 

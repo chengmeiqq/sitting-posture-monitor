@@ -1,0 +1,14 @@
+# 运行时依赖 (板端实测于 RK3588S / Ubuntu 20.04 / Python 3.8.10)
+#
+# 注意: rknn-toolkit-lite2 不支持 pip 直接安装, 必须下载 Rockchip 官方的
+# aarch64 wheel (与本板 rknpu2 驱动版本匹配), 详见 README "安装" 一节。
+
+rknn-toolkit-lite2==2.3.2     # NPU 推理运行时 (需官方 aarch64 wheel)
+numpy==1.24.4
+opencv-python-headless==5.0.0.93
+Flask==3.0.3
+
+# 仅转换模型时需要 (x86 主机上跑, 板端不必安装):
+# rknn-toolkit2==2.3.2
+# onnx==1.16.0
+# ultralytics  (导出 yolov8n-pose.onnx, AGPL-3.0)

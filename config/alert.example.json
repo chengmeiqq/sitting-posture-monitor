@@ -1,0 +1,17 @@
+{
+  "sound_enabled": true,
+  "sound_volume": 0.35,
+  "repeat_s": 30.0,
+  "min_gap_s": 1.5,
+  "device": "hw:0,0",
+  "alert_states": [
+    "HEAD_FWD",
+    "BODY_FWD",
+    "SLUMP",
+    "HEAD_NEAR_DESK",
+    "TILT_L",
+    "TILT_R",
+    "SIDE_LEAN"
+  ],
+  "silent_when_uncalibrated": true
+}

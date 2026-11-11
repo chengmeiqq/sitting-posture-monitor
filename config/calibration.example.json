@@ -1,0 +1,28 @@
+{
+  "ref": {
+    "torso_tilt_deg": 0.0,
+    "shoulder_line_deg": 0.0,
+    "head_fwd_norm": 0.0,
+    "head_down_norm": 0.0,
+    "trunk_off_norm": 0.0,
+    "ear_sho_dy_norm": 0.0,
+    "ear_fwd_norm": 0.0,
+    "eye_hip_ratio": 0.0
+  },
+  "spread": {
+    "torso_tilt_deg": 0.0,
+    "shoulder_line_deg": 0.0,
+    "head_fwd_norm": 0.0,
+    "head_down_norm": 0.0,
+    "trunk_off_norm": 0.0,
+    "ear_sho_dy_norm": 0.0,
+    "ear_fwd_norm": 0.0,
+    "eye_hip_ratio": 0.0
+  },
+  "facing": "left",
+  "n_frames": 0,
+  "ts": "",
+  "notes": [
+    "首次运行请执行 15s 校准: python3 calibration/calibrate.py"
+  ]
+}

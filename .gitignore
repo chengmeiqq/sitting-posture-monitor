@@ -3,6 +3,7 @@ logs/
 audio/
 config/calibration.json
 config/sound.json
+config/alert.json
 *.bak
 *.bak2
 __pycache__/
@@ -16,8 +17,6 @@ models/*.rknn
 models/*.model
 models/*.data
 models/coco_subset/
-# 内部工作日志(含内网IP/调试笔记, 不发布)
-PROJECT_STATUS.md
 web.py.bak*
-# 本地配置
-config/alert.json
+
+# 运行时生成 / 含个人基准数据 (仓库只放 *.example.json)
