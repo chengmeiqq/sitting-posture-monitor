@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>学习坐姿监控 · 本地</title>
+<style>
+:root{--bg:#111418;--card:#1b2026;--line:#2a323c;--txt:#e6edf3;--mut:#8b98a5;
+--green:#2ecc71;--yellow:#f1c40f;--red:#e74c3c}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--txt);font-family:"Noto Sans CJK SC","PingFang SC",system-ui,sans-serif}
+header{padding:14px 20px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+header h1{font-size:18px;margin:0;font-weight:600}
+.badge{font-size:12px;padding:3px 10px;border-radius:20px;background:var(--card);color:var(--mut);border:1px solid var(--line)}
+main{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:16px;padding:16px 20px;max-width:1500px;margin:0 auto}
+@media(max-width:1100px){main{grid-template-columns:1fr}}
+.vwrap{background:#000;border-radius:12px;overflow:hidden;position:relative;border:1px solid var(--line)}
+.vwrap img{width:100%;display:block;aspect-ratio:16/9;object-fit:cover}
+.vtag{position:absolute;left:10px;bottom:10px;font-size:11px;color:#9ab;background:rgba(0,0,0,.55);padding:2px 8px;border-radius:6px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:14px}
+.state-big{font-size:34px;font-weight:700;line-height:1.2}
+.s-green{color:var(--green)}.s-yellow{color:var(--yellow)}.s-red{color:var(--red)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px 14px;margin-top:10px;font-size:13px}
+.kv{display:flex;justify-content:space-between;border-bottom:1px dashed var(--line);padding:3px 0;color:var(--mut)}
+.kv b{color:var(--txt);font-weight:600}
+button{border:0;border-radius:9px;padding:9px 14px;font-size:14px;cursor:pointer;font-weight:600}
+.btn-cal{background:var(--green);color:#04220f;width:100%}
+.btn-cal:disabled{background:#2a323c;color:var(--mut);cursor:wait}
+.btn-stop{background:var(--red);color:#fff;width:100%;margin-top:8px}
+.prog{height:8px;background:#0e1115;border-radius:5px;margin-top:10px;overflow:hidden;display:none}
+.prog i{display:block;height:100%;background:linear-gradient(90deg,#f1c40f,#2ecc71);width:0%}
+.note{font-size:12px;color:var(--mut);margin-top:8px;line-height:1.6}
+ul.ev{list-style:none;margin:0;padding:0;font-size:13px;max-height:260px;overflow:auto}
+ul.ev li{display:flex;gap:8px;padding:5px 0;border-bottom:1px dashed var(--line)}
+ul.ev .t{color:var(--mut);font-variant-numeric:tabular-nums;flex:0 0 62px}
+.dot{width:9px;height:9px;border-radius:50%;margin-top:5px;flex:0 0 9px}
+.d-green{background:var(--green)}.d-yellow{background:var(--yellow)}.d-red{background:var(--red)}
+.warnbar{display:none;background:#3a2410;color:#f6c667;font-size:13px;padding:8px 20px;border-bottom:1px solid #5a3a1a}
+</style>
+</head>
+<body>
+<div class="warnbar" id="uncal">⚠ 尚无个人校准，当前用默认保守基准。请让小朋友端正坐好，点右侧"开始校准"（15秒）。</div>
+<header>
+  <h1>📐 学习坐姿监控 <span style="font-size:12px;color:var(--mut)">RK3588S · NPU 本地推理 · 视频不出这台机器</span></h1>
+  <span class="badge" id="perf">FPS -- · NPU --ms</span>
+  <span class="badge" id="lat">端到端延迟 --</span>
+  <span class="badge" id="persons">人数 --</span>
+  <span class="badge" id="clock">--:--:--</span>
+</header>
+<main>
+  <section>
+    <div class="vwrap">
+      <img id="feed" src="/api/frame.jpg" alt="实时画面">
+      <div class="vtag">画面仅在内存处理，不录制、不保存</div>
+    </div>
+    <div class="card" style="margin-top:14px">
+      <div style="font-size:13px;color:var(--mut);margin-bottom:6px">姿态特征（相对个人基准的偏移）</div>
+      <div class="grid2" id="feats">
+        <div class="kv"><span>躯干倾角</span><b>--</b></div>
+        <div class="kv"><span>肩线角度</span><b>--</b></div>
+        <div class="kv"><span>头部前移</span><b>--</b></div>
+        <div class="kv"><span>头颈下垂</span><b>--</b></div>
+        <div class="kv"><span>躯干偏移</span><b>--</b></div>
+        <div class="kv"><span>眼-髋比(借鉴参考项目)</span><b>--</b></div>
+      </div>
+    </div>
+  </section>
+  <aside>
+    <div class="card">
+      <div style="font-size:13px;color:var(--mut)">当前坐姿</div>
+      <div class="state-big s-yellow" id="stText">连接中…</div>
+      <div style="font-size:13px;color:var(--mut);margin-top:4px" id="stDur"></div>
+      <div style="margin-top:14px">
+        <button class="btn-cal" id="btnCal">🧍 开始校准（保持端正坐姿15秒）</button>
+        <button class="btn-stop" id="btnCalStop" style="display:none">取消校准</button>
+        <div class="prog" id="progWrap"><i id="progBar"></i></div>
+      </div>
+      <div class="note" id="calNote">校准=让小朋友以平时学习的正常坐姿坐好再点。系统采集15秒建立她的个人基准（含桌子朝向）；换人/换座位布局后需重新校准。成人先测流程没问题，正式使用前请重新校准。</div>
+    </div>
+    <div class="card">
+      <div style="font-size:13px;color:var(--mut);margin-bottom:8px">声音提示</div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <button id="btnSound" class="btn-cal" style="flex:1">🔊 声音提示：开</button>
+        <button id="btnTest" class="btn-stop" style="flex:0 0 auto">试听</button>
+      </div>
+      <div class="note" id="soundNote">
+        🔊 提示音从<b>你正在看页面的这台设备</b>（浏览器）播放；板上接入喇叭后也会同步响。持续异常每 30 秒提醒一次，坐回正常不响。
+      </div>
+      <div id="audHint" style="display:none;margin-top:8px;font-size:13px;color:#f6c667">⚠ 浏览器限制：请点一下本页任意位置激活声音</div>
+    </div>
+    <div class="card">
+      <div style="font-size:13px;color:var(--mut);margin-bottom:6px">状态事件</div>
+      <ul class="ev" id="events"></ul>
+    </div>
+  </aside>
+</main>
+<script>
+const LEVEL_CN={green:'正常',yellow:'提醒',red:'异常'};
+let calTimer=null;
+async function tick(){
+  try{
+    const r=await fetch('/api/state');const s=await r.json();
+    const el=document.getElementById('stText');
+    el.textContent=(s.state_cn||s.state)+(s.calibrated?'':' · 未校准');
+    el.className='state-big s-'+s.level;
+    document.getElementById('stDur').textContent=
+      s.dur_s>0.5?('该状态已持续 '+s.dur_s.toFixed(0)+' 秒'):(s.state==='NORMAL'?'继续保持':'' );
+    document.getElementById('perf').textContent=`FPS ${s.fps} · NPU ${s.npu_ms}ms`;
+    const lt=document.getElementById('lat');
+    if(s.lat_ms!=null){lt.textContent='端到端延迟 ~'+s.lat_ms+'ms';
+      lt.style.color=s.lat_ms>1200?'var(--red)':s.lat_ms>600?'var(--yellow)':'var(--mut)';}
+    document.getElementById('persons').textContent='人数 '+s.persons;
+    document.getElementById('clock').textContent=s.ts;
+    document.getElementById('uncal').style.display=s.calibrated?'none':'block';
+    if(s.sound && typeof s.sound.enabled==='boolean' && s.sound.enabled!==soundOn){
+      soundOn=s.sound.enabled; paintSound();
+    }
+    handleSoundEvt(s);
+    if(s.sound && s.sound.ok===false){
+      document.getElementById('soundNote').textContent='⚠ 音频设备不可用，声音提示失效（页面显示正常）';
+    }
+    const f=s.feats||{},kv=document.querySelectorAll('#feats .kv b');
+    const fm=(v,d=2)=>v==null?'--':(typeof v==='number'?v.toFixed(d):v);
+    kv[0].textContent=fm(f.torso_tilt_deg,1)+'°';
+    kv[1].textContent=fm(f.shoulder_line_deg,1)+'°';
+    kv[2].textContent=fm(f.head_fwd_norm);
+    kv[3].textContent=fm(f.head_down_norm);
+    kv[4].textContent=fm(f.trunk_off_norm);
+    kv[5].textContent=fm(f.eye_hip_ratio);
+    if(s.pending_p!=null){
+      document.getElementById('stDur').textContent =
+        '已检测到「'+s.pending_cn+'」，确认为异常还需 '+
+        Math.max(0,Math.ceil((1-s.pending_p)*4))+' 秒…';
+    }
+    if(s.cal_progress!=null){
+      document.getElementById('progWrap').style.display='block';
+      document.getElementById('progBar').style.width=(s.cal_progress*100).toFixed(1)+'%';
+      document.getElementById('btnCal').disabled=true;
+      document.getElementById('btnCal').textContent='校准采集中…';
+      document.getElementById('btnCalStop').style.display='block';
+    }else{
+      document.getElementById('progWrap').style.display='none';
+      document.getElementById('btnCal').disabled=false;
+      document.getElementById('btnCal').textContent='🧍 开始校准（保持端正坐姿15秒）';
+      document.getElementById('btnCalStop').style.display='none';
+      if(s.cal_msg){document.getElementById('calNote').textContent=s.cal_msg;}
+    }
+  }catch(e){
+    document.getElementById('stText').textContent='服务未连接';
+    document.getElementById('stText').className='state-big s-red';
+  }
+}
+const btnSound=document.getElementById('btnSound');
+const btnTest=document.getElementById('btnTest');
+let soundOn=true;
+/* —— 浏览器端 WebAudio 提示音（板子没接喇叭也能响） —— */
+let actx=null, audioUnlocked=false, lastSoundSeq=null;
+function ensureCtx(){
+  if(!actx){ try{ actx=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){} }
+  if(actx && actx.state==='suspended') actx.resume();
+}
+function beep(freq,start,dur,vol){
+  const o=actx.createOscillator(), g=actx.createGain();
+  o.type='square'; o.frequency.value=freq; o.connect(g); g.connect(actx.destination);
+  const t0=actx.currentTime+start;
+  g.gain.setValueAtTime(0.0001,t0);
+  g.gain.linearRampToValueAtTime(vol,t0+0.012);
+  g.gain.setValueAtTime(vol,t0+dur-0.012);
+  g.gain.linearRampToValueAtTime(0.0001,t0+dur);
+  o.start(t0); o.stop(t0+dur+0.03);
+}
+const SND={alarm:[[1180,0,.14],[1180,.24,.14],[1180,.48,.22]],
+            warn:[[760,0,.16]],
+            good:[[660,0,.15],[990,.22,.28]]};
+function playKind(k){
+  if(!actx||!SND[k]||actx.state!=='running')return;
+  SND[k].forEach(([f,s,d])=>beep(f,s,d,.3));
+}
+document.addEventListener('click',()=>{ ensureCtx(); audioUnlocked=true; document.getElementById('audHint').style.display='none'; });
+document.addEventListener('touchstart',()=>{ ensureCtx(); audioUnlocked=true; }, {passive:true});
+function handleSoundEvt(s){
+  const ev=s.sound_evt;
+  if(!ev||typeof ev.seq!=='number')return;
+  if(lastSoundSeq===null){ lastSoundSeq=ev.seq; return; }   // 首次只记基线,不补放旧事件
+  if(ev.seq>lastSoundSeq){
+    lastSoundSeq=ev.seq;
+    if(soundOn && s.sound && s.sound.enabled!==false) playKind(ev.kind);
+  }
+}
+function paintSound(){
+  btnSound.textContent=soundOn?'🔊 声音提示：开':'🔇 声音提示：关';
+  btnSound.style.opacity=soundOn?'1':'0.55';
+}
+btnSound.onclick=async()=>{
+  soundOn=!soundOn;
+  paintSound();
+  try{ await fetch('/api/sound',{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({enabled:soundOn})}); }catch(e){}
+  document.getElementById('soundNote').textContent = soundOn
+    ? '异常坐姿确认后会响。持续异常每 30 秒提醒一次。'
+    : '声音已关闭，仅页面显示。';
+};
+btnTest.onclick=async()=>{
+  playKind('alarm'); // 试听用浏览器本地音, 不依赖板子喇叭
+  document.getElementById('soundNote').textContent='试听刚播的就是异常时的急促音。若没听到，先点页面任意位置激活浏览器声音。';
+};
+paintSound();
+async function loadRecent(){
+  try{
+    const r=await fetch('/api/recent');const list=await r.json();
+    const ul=document.getElementById('events');
+    ul.innerHTML=list.slice().reverse().slice(0,20).map(s=>
+      `<li><span class="t">${s.ts}</span><span class="dot d-${s.level}"></span><span>${s.state_cn||s.state}</span></li>`).join('');
+  }catch(e){}
+}
+document.getElementById('btnCal').onclick=async()=>{
+  const r=await fetch('/api/calibrate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'start'})});
+  const j=await r.json();document.getElementById('calNote').textContent=j.msg;
+};
+document.getElementById('btnCalStop').onclick=async()=>{
+  await fetch('/api/calibrate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'stop'})});
+};
+const img=document.getElementById('feed');
+// 用 multipart MJPG 长连接代替 120ms 轮询 frame.jpg:
+// 轮询每张图都要重新 TCP+HTTP, 且浏览器解码跟不上时会在本地排队 -> 感官延迟越来越大
+let useStream=true;
+function startStream(){
+  img.src='/api/stream';
+  img.onerror=()=>{ if(useStream){ useStream=false; pollFrame(); } };
+}
+async function pollFrame(){
+  try{
+    const r=await fetch('/api/frame.jpg?t='+Date.now());
+    if(r.ok){const b=await r.blob();const u=URL.createObjectURL(b);img.src=u;if(img.dataset.u)URL.revokeObjectURL(img.dataset.u);img.dataset.u=u;}
+  }catch(e){}
+  setTimeout(pollFrame,200);
+}
+startStream();
+tick();loadRecent();
+setInterval(tick,1000);setInterval(loadRecent,5000);
+</script>
+</body>
+</html>

@@ -1,0 +1,23 @@
+# 运行产物 / 隐私数据 —— 永不提交
+logs/
+audio/
+config/calibration.json
+config/sound.json
+*.bak
+*.bak2
+__pycache__/
+*.pyc
+# 第三方参考代码 (各自 license, 不随本仓库分发)
+third_party_ref/
+models/ref/
+# 模型权重: YOLOv8 系列基础权重为 AGPL-3.0, 不在本仓库分发, 用脚本自行转换
+models/*.onnx
+models/*.rknn
+models/*.model
+models/*.data
+models/coco_subset/
+# 内部工作日志(含内网IP/调试笔记, 不发布)
+PROJECT_STATUS.md
+web.py.bak*
+# 本地配置
+config/alert.json
