@@ -1,0 +1,24 @@
+[Unit]
+Description=Posture Monitor Web (RK3588S NPU, port 8100)
+Documentation=file:///root/posture_monitor/PROJECT_STATUS.md
+After=network-online.target local-fs.target
+Wants=network-online.target
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/root/posture_monitor
+ExecStart=/usr/bin/python3 /root/posture_monitor/web.py
+Restart=always
+RestartSec=3
+KillSignal=SIGTERM
+TimeoutStopSec=8
+# 相机/日志都在本地, 只给必要权限
+StandardOutput=append:/root/posture_monitor/logs/web.out
+StandardError=append:/root/posture_monitor/logs/web.out
+# 进程崩塌时别无限刷日志
+LimitNOFILE=4096
+
+[Install]
+WantedBy=multi-user.target

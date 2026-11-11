@@ -32,6 +32,10 @@ DISP_W, DISP_H = 800, 450
 PORT = 8100
 LOG_PATH = os.path.join(BASE, 'logs', 'web_runtime.jsonl')
 
+# 实测(1280x720 -> 800x450 resize+JPEG): 0线程13.6ms / 1线程11.8 / 2线程8.8 / 4线程9.9
+# 2 线程最优, 也避免 OpenCV 默认把 8 核全占满抢 NPU 推理线程
+cv2.setNumThreads(2)
+
 LEVEL_NAMES = {GREEN: '正常', YELLOW: '注意', RED: '异常'}
 SOUND_STATE_FILE = os.path.join(BASE, 'config', 'sound.json')
 
